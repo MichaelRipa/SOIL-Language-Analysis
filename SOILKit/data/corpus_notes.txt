@@ -1,0 +1,6 @@
+For Gutenburg books in different languages, the content lies between the following two lines:
+
+*** START OF THIS PROJECT GUTENBERG EBOOK DOPO IL DIVORZIO ***
+*** END OF THIS PROJECT GUTENBERG EBOOK DOPO IL DIVORZIO ***
+
+For the sake of making corpuses, a current plan is to create a shellscript (or python script) that removes content outside of these lines.
