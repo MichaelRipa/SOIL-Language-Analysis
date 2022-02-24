@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-from SOILKit.corpus import Corpus
 import nltk
 import numpy as np
 from nltk import word_tokenize
@@ -11,9 +10,9 @@ from sklearn.linear_model import LogisticRegression
 
 class Similarity:
 
-    def __init__(self,language='italian'):
-        ''' Initializes a corpus and allows for similarity metrics to be computed with respect to a corpus'''
-        self.c = Corpus(language)
+    def __init__(self,corpus=None):
+        '''Initializes corpus and allows for similarity metrics to be computed with respect to a corpus'''
+        self.c = corpus
 
     def mean_edit_distance(self,word,corpus=None):
         ''' 
@@ -21,7 +20,7 @@ class Similarity:
         assert type(word) == str
 
         if corpus == None:
-            corpus = self.c.corpus
+            corpus = self.c.words
         
         total_distance = 0
         it = iter(corpus)
@@ -34,7 +33,7 @@ class Similarity:
         ''' For an inputted word and integer n, returns n words with smallest edit distance ''' 
 
         if corpus == None:
-            corpus = self.c.corpus
+            corpus = self.c.words
         
         edit_dist = nltk.FreqDist()
         it = iter(corpus)
@@ -46,7 +45,7 @@ class Similarity:
         ''' For an inputted word and integer n, returns n words with smallest Jaccard distance ''' 
 
         if corpus == None:
-                corpus = self.c.corpus
+                corpus = self.c.words
             
         
         edit_dist = nltk.FreqDist()
@@ -55,17 +54,14 @@ class Similarity:
             edit_dist[token] += nltk.jaccard_distance(set(word),set(token))
         return edit_dist.most_common()[-1*n:][::-1]
     
-    def n_sim_embeddings(self,word,n=10):
-
-        return self.embedding.wv.most_similar(word,topn=n)
-    
+   
     def mean_jaccard_distance(self,word,corpus=None):
         ''' 
         For an inputted word, returns the mean Jaccard distance with respect to the entire corpus '''
         assert type(word) == str
         
         if corpus == None:
-            corpus = self.c.corpus
+            corpus = self.c.words
 
         total_distance = 0
         it = iter(corpus)
@@ -81,7 +77,7 @@ class Similarity:
         assert type(word) == str
         
         if corpus == None:
-            corpus = self.c.corpus
+            corpus = self.c.words
 
         min_pairs = []
         for token in corpus:
@@ -95,7 +91,7 @@ class Similarity:
     def make_everygrams(self,n,corpus=None):
 
         if corpus == None:
-                    corpus = self.c.ipa
+                    corpus = self.c.words_ipa
 
         train_data, padded_sents = padded_everygram_pipeline(n,corpus)
         train_data = [list(gram) for gram in list(train_data)]
@@ -103,31 +99,4 @@ class Similarity:
 
         return train_data,padded_sents
          
-    def make_mle(self,n,corpus=None):
 
-        if corpus == None:
-            corpus = self.c.ipa
-
-        train, vocab = padded_everygram_pipeline(n,corpus)
-        lm = MLE(n)
-        lm.fit(train,vocab)
-        return lm 
-
-    
-    def generate_words(self,length=10,n=3,num_words=1,corpus=None,ipa=True):
-        
-        if corpus == None:
-            if ipa:
-                corpus = self.c.ipa
-            else:
-                corpus = self.c.corpus
-
-        lm = self.make_mle(n,corpus)
-        generated_words = []
-        for i in range(num_words):
-            word = '<s>'
-            while '<s>' in word or '</s>' in word:
-                word = ''.join(list(lm.generate(length)))
-            generated_words.append(word)
-
-        return generated_words

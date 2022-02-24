@@ -2,53 +2,32 @@
 
 from SOILKit.header import *
 import os 
+import re
 import csv
+import sys
 import pandas as pd
 import epitran
 import numpy as np
-from nltk import word_tokenize
+from nltk import word_tokenize 
+from nltk import sent_tokenize
+from nltk import FreqDist
+from nltk.util import ngrams
+from nltk.lm.preprocessing import pad_both_ends
 from nltk.lm.preprocessing import padded_everygram_pipeline
+from abc import ABC, abstractmethod
 
-class Corpus:
-    ''' 
-    A class to represent a corpus of a given language
+#Allow large csv files to be opened
+csv.field_size_limit(sys.maxsize)
 
-    Attributes:
-    language : str
-        Language of initialized corpus
-            options: 'italian','german','english'
-
+class Corpus_Generator:
     '''
-
-    def __init__(self,language='italian'):
-        
-        assert language in LANGUAGES
-        self.language = language
-        self.__set_corpus()
-
-    def sample(self,n=1,ipa=False):
-        ''' sample(n,ipa=False) 
-            Returns n random tokens from the instantiated corpus
-            n - number of tokens
-            ipa - flag for returning IPA format of tokens
-        '''
-        if ipa:
-            return list(np.random.choice(self.ipa,n))
-        else: 
-            return list(np.random.choice(self.corpus,n))
-
-    @staticmethod
-    def sample_from_corpus(corpus,n=1):
-        shuffled_corpus = corpus.copy()
-        np.random.shuffle(shuffled_corpus)
-        return shuffled_corpus[0:n]
-
-
-    def sample_pairs(self,n=1):
-        indicies = np.random.choice(np.arange(0,len(self.corpus)),n)
-        pairs = [(self.corpus[i],self.ipa[i]) for i in indicies]
-        
-        return pairs
+        Current issue: No easy way to put this method in without inheritance
+        @staticmethod
+        def sample_from_corpus(corpus,n=1):
+            shuffled_corpus = corpus.copy()
+            np.random.shuffle(shuffled_corpus)
+            return shuffled_corpus[0:n]
+    '''
     def create_ngrams(self,n=1,corpus=None,for_model=True,vocab=False):
        
         if corpus == None:
@@ -89,120 +68,122 @@ class Corpus:
             ngram = [tup for tup in ngram for char in chars_to_ign if char not in tup] 
         return ngram
 
+    @staticmethod
+    def __load_corpus(language=None):
 
-    def __set_corpus(self):
+        assert type(language) == str
+        assert language in LANGUAGES
 
-        os.chdir(TOKEN_PATH)
-        existing_token_file = os.path.isfile(f'{self.language}.csv') 
-        existing_ipa_file = os.path.isfile(f'{self.language}_ipa.csv') 
-        if existing_token_file == False or existing_ipa_file == False:
-            # Jan 14 - To Do: Update this to only update necessary corpuses
-            self.__update_corpus()
-        words = pd.read_csv(f'{self.language}.csv').values.tolist()
-        ipa = pd.read_csv(f'{self.language}_ipa.csv').values.tolist()
-        self.corpus = [word[0] for word in words if type(word[0]) == str] 
-        self.ipa = [word[0] for word in ipa if type(word[0]) == str]
+        #Check if corpus files created locally 
+        #        os.chdir(TOKEN_PATH)
+        os.chdir(TEST_PATH)
 
-        #January 13th: Proposed update
-        #        self.corpus = self._read_from_csv(f'{self.language}.csv')
-        #        self.ipa = self._read_from_csv(f'{self.language}_ipa.csv')
+        missing_words = not os.path.isfile(f'{language}_words.csv') 
+        missing_sents= not os.path.isfile(f'{language}_sents.csv') 
+        missing_raw = not os.path.isfile(f'{language}_raw.csv') 
+        missing_words_ipa = not os.path.isfile(f'{language}_words_ipa.csv') 
+        missing_sents_ipa = not os.path.isfile(f'{language}_sents_ipa.csv') 
 
-        if self.language == 'english':
-            positive = pd.read_csv(f'positive_words.csv').values.tolist()
-            positive_ipa = pd.read_csv(f'positive_ipa.csv').values.tolist()
-            negative = pd.read_csv(f'negative_words.csv').values.tolist()
-            negative_ipa = pd.read_csv(f'negative_ipa.csv').values.tolist()
-            self.positive = [word[0] for word in positive if type(word[0]) == str]
-            self.positive_ipa = [word[0] for word in positive_ipa if type(word[0]) == str]
-            self.negative = [word[0] for word in negative if type(word[0]) == str]
-            self.negative_ipa = [word[0] for word in negative_ipa if type(word[0]) == str]
 
-            #January 13th: Proposed Updates
-        #        self.positive = self._read_from_csv('positive.csv')
-        #        self.positive_ipa = self._read_from_csv('positive_ipa.csv')
-        #        self.negative = self._read_from_csv('negative_words.csv')
-        #        self.negative_ipa = self._read_from_csv('negative_ipa.csv')
+        # Create corpus files if missing from TOKEN_PATH
+        Corpus_Generator._Corpus_Generator__update_corpus(missing_words,missing_sents,missing_raw,missing_words_ipa,missing_sents_ipa,language)
+        words = Corpus_Generator._Corpus_Generator__read_from_csv(f'{language}_words.csv')
+        sents = Corpus_Generator._Corpus_Generator__read_from_csv(f'{language}_sents.csv')
+        raw = Corpus_Generator._Corpus_Generator__read_from_csv(f'{language}_raw.csv')
+        words_ipa = Corpus_Generator._Corpus_Generator__read_from_csv(f'{language}_words_ipa.csv')
+        sents_ipa = Corpus_Generator._Corpus_Generator__read_from_csv(f'{language}_sents_ipa.csv')
+        
 
-         # January 12th: Started adding functionality for corpus sentances
-#        os.chdir(os.path.join(CORPUS_PATH,self.language))
-#        self.sentances = self._read_from_csv('sentances.csv')
-#        self.ipa_sentances = self._read_from_csv('ipa_sentances.csv')
-               
         os.chdir(SCRIPT_PATH)
 
-    def __update_corpus(self):
+        return words,sents,raw,words_ipa,sents_ipa
 
-        epi = epitran.Epitran(LANGUAGE_CODES[self.language])
+
+    @staticmethod
+    def __update_corpus(missing_words,missing_sents,missing_raw,missing_words_ipa,missing_sents_ipa,language):
+
+        #Check whether anything needs to be updated
+        if True not in [missing_words,missing_sents,missing_raw,missing_words_ipa,missing_sents_ipa]:
+            return
+
         
-        books = os.listdir()
+        #        DOCUMENT_PATH = os.path.join(CORPUS_PATH, f'{language.capitalize()}')
+        #        os.chdir(DOCUMENT_PATH)
+        os.chdir(TEST_PATH)
+        l_index = LANGUAGES.index(language)
+        epi = epitran.Epitran(LANGUAGE_CODES[l_index])
+        
+        document_names = os.listdir()
         raw = ''
-        for book in books:
+        for book in document_names:
             if book.endswith('.txt'):
                 f = open(book,'r',encoding='utf-8')
                 raw += f.read().lower()
                 f.close()
 
-        # Jan 12th : Starting to create the machinary for creating a corpus of sentances
-        sents = __tokenize_sentances(raw)
-        ipa_sents = [epi.translisterate(sent) for sent in sents]
 
-        tokens = word_tokenize(raw,language=self.language)
+
+        # Create list of tokens and IPA conversions 
+
+        tokens = word_tokenize(raw,language=language)
         tokens = [word for word in tokens if word.isalpha()]
         tokens = list(set(tokens))
         np.random.shuffle(tokens)
         ipa = [epi.transliterate(word) for word in tokens]
-
-        #Write csv file of tokens
-        ''' with open(f'{self.language}.csv', 'w',newline='',encoding='utf-8') as csvfile:
-            token_writer = csv.writer(csvfile,delimiter=' ',quotechar ='|',quoting = csv.QUOTE_MINIMAL)
-
-            for word in tokens:
-                try:
-                    token_writer.writerow([word])
-                except:
-                    pass
-
-        #Write csv file of transcriptions
-        with open(f'{self.language}_ipa.csv', 'w',newline='',encoding='utf-8') as csvfile:
-            token_writer = csv.writer(csvfile,delimiter=' ',quotechar ='|',quoting = csv.QUOTE_MINIMAL)
-
-            for word in ipa:
-                try:
-                    token_writer.writerow([word])
-                except:
-                    pass
-        ''' 
-        #Jan 12th : Proposed method of writing the new csv files
-        self._strings_to_csv(tokens,f'{self.language}.csv')
-        self._strings_to_csv(ipa,f'{self.language}_ipa.csv')
-        self._strings_to_csv(sents,f'{self.language}_sents.csv')
-        self._strings_to_csv(sents_ipa,f'{self.language}_sents_ipa.csv')
+        Corpus_Generator._Corpus_Generator__strings_to_csv(tokens,f'{language}_words.csv')
+        Corpus_Generator._Corpus_Generator__strings_to_csv(ipa,f'{language}_words_ipa.csv')
                 
-        
-        self.__set_corpus()
+        if missing_sents or missing_sents_ipa:
+            sents = Corpus_Generator._Corpus_Generator__tokenize_sents(raw,l=language)
+            sents_ipa = []
+            for s in sents:
+                cur_sent = ''
+                for word in s.split(' '):
+                    if word in tokens:
+                        cur_sent += ipa[tokens.index(word)] + ' '
+                sents_ipa.append(cur_sent)
 
-    def _strings_to_csv(strings,file_name):
+#            sents_ipa = [ ipa[tokens.index(word)] + ' ' for s in sents for word in s.split(' ') if word in tokens]
+#            sents_ipa = [epi.transliterate(sent) for sent in sents]
+            
+            #Jan 12th : Proposed method of writing the new csv files
+            Corpus_Generator._Corpus_Generator__strings_to_csv(sents,f'{language}_sents.csv')
+            Corpus_Generator._Corpus_Generator__strings_to_csv(sents_ipa,f'{language}_sents_ipa.csv')
+ 
+        if missing_raw:
+            Corpus_Generator._Corpus_Generator__strings_to_csv([raw],f'{language}_raw.csv')
+         
+    
+    @staticmethod
+    def __strings_to_csv(strings,file_name):
         ''' Added January 12th : Creates a csv file for a list of strings (used when updating) '''
         with open(file_name, 'w',newline='',encoding='utf-8') as csvfile:
-            token_writer = csv.writer(csvfile,delimiter=' ',quotechar ='|',quoting = csv.QUOTE_MINIMAL)
+            token_writer = csv.writer(csvfile)
 
             for word in strings:
                 try:
                     token_writer.writerow([word])
                 except:
                     pass
- 
-    def _read_from_csv(self,file_name):
-        ''' Added January 13th : Creates a list of strings from a csv file (assumed in same directory, used when loading corpuses) '''
-        sents = pd.read_csv(file_name).values.tolist()
-        return [sent[0] for sent in sents if type(sent[0]) == str]
- 
     
+    @staticmethod 
+    def __read_from_csv(file_name):
+        ''' Added January 13th : Creates a list of strings from a csv file (assumed in same directory, used when loading corpuses) '''
+        #        sents = pd.read_csv(file_name).values.tolist()
+#        sents = pd.read_csv(file_name,encoding='utf-8')
+        with open(file_name,encoding='utf-8',newline='') as csvfile:
+            corpusreader = csv.reader(csvfile)
+            sents = [row[0] for row in corpusreader]
+        return sents
+#        return [sent[0] for sent in sents if type(sent[0]) == str]
+ 
+    @staticmethod 
     def __tokenize_sents(raw,l='italian'):
         '''Jan 12th : Begun working on this helper function '''
         tokenized_sents = []
-        raw_sents = nltk.sent_tokenize(raw,language=l)
-        split_chars = r'[.,;:-]'
+        raw_sents = sent_tokenize(raw,language=l)
+    
+        split_chars = r'[.,;:-?!]'
         for sent in raw_sents:
 
             sent = sent.lower().replace('\n',' ')
@@ -211,30 +192,97 @@ class Corpus:
                 if ''.join(chunk.split(' ')).isalpha():
                     tokenized_sents.append(chunk)
         return tokenized_sents
-'''            
-    Jan 21st - Wanting to implement each of these subclasses, but will need to ensure that it does not distupt the current state of the Corpus class 
-
-    class English(Corpus):
-
-        def __init__(self):
-
-            words,sents,raw,words_ipa,sents_ipa,raw_ipa = Corpus.__set_corpus(language='english')
-            super().__init__(words,sents,raw,words_ipa,sents_ipa,raw_ipa)
-     
-    class German(Corpus):
-
-        def __init__(self):
-
-            words,sents,raw,words_ipa,sents_ipa,raw_ipa = Corpus.__set_corpus(language='german')
-           super().__init__(words,sents,raw,words_ipa,sents_ipa,raw_ipa)
-
-   
-    class Italian(Corpus):
-
-        def __init__(self):
-
-            words,sents,raw,words_ipa,sents_ipa,raw_ipa = Corpus.__set_corpus(language='italian')
-           super().__init__(words,sents,raw,words_ipa,sents_ipa,raw_ipa)
 
 
-'''
+class Corpus:
+
+    def __init__(self,words,sents,raw,words_ipa,sents_ipa):
+        
+        self.words = words 
+        self.sents = sents 
+        self.raw = raw 
+        self.words_ipa = words_ipa 
+        self.sents_ipa = sents_ipa 
+
+    def sample(self,n=1,ipa=False):
+        ''' sample(n=1,ipa=False) 
+            Returns n random tokens from the instantiated corpus
+            n - number of tokens
+            ipa - flag for returning IPA format of tokens
+        '''
+        if ipa:
+            return list(np.random.choice(self.words_ipa,n))
+        else: 
+            return list(np.random.choice(self.words,n))
+
+    def sample_sents(self,n=1,ipa=False):
+            ''' sample_sents(n=1,ipa=False) 
+                Returns n random sentances from the instantiated corpus
+                n - number of sentances
+                ipa - flag for returning IPA format of sentances
+            '''
+            if ipa:
+                return list(np.random.choice(self.sents_ipa,n))
+            else: 
+                return list(np.random.choice(self.sents,n))
+
+
+    def sample_pairs(self,n=1):
+        '''sample_pairs(n)
+            Returns n tuples containing randomly sampled tokens and their cooresponding ipa transcriptions
+        '''
+        indicies = np.random.choice(np.arange(0,len(self.words)),n)
+        pairs = [(self.words[i],self.words_ipa[i]) for i in indicies]
+        
+        return pairs
+
+    def sample_sent_pairs(self,n=1):
+        '''sample_sent_pairs(n)
+            Returns n tuples containing randomly sampled sentances and their cooresponding ipa transcriptions
+        '''
+        indicies = np.random.choice(np.arange(0,len(self.words)),n)
+        pairs = [(self.sents[i],self.sents_ipa[i]) for i in indicies]
+
+        return pairs
+
+def get_frequencies(self,ngram=1,everygram=False,ipa=True):
+        '''Counts letter frequencies in the derived classes corpus''' 
+        fdict = FreqDist() 
+       # Jan 28th - This does not work yet 
+        corp = self.words_ipa if ipa == True else self.words
+        for i in range(1,ngram+1):
+            if everygram or i == ngram:
+                ngram_counts = list(ngrams(pad_both_ends(corp,i),i))
+                print(ngram_counts)
+                for gram in ngram_counts:
+                    fdict[gram] += 1
+
+        return fdict
+
+        
+        
+class English(Corpus):
+
+    def __init__(self):
+
+        words,sents,raw,words_ipa,sents_ipa = Corpus_Generator._Corpus_Generator__load_corpus(language='english')
+
+        super().__init__(words,sents,raw,words_ipa,sents_ipa)
+ 
+
+class German(Corpus):
+
+    def __init__(self):
+
+        words,sents,raw,words_ipa,sents_ipa = Corpus_Generator.__load_corpus(language='german')
+        super().__init__(words,sents,raw,words_ipa,sents_ipa)
+
+
+class Italian(Corpus):
+
+    def __init__(self):
+
+        words,sents,raw,words_ipa,sents_ipa = Corpus_Generator._Corpus_Generator__load_corpus(language='italian')
+        super().__init__(words,sents,raw,words_ipa,sents_ipa)
+
+

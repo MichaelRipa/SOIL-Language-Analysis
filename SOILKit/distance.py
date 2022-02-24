@@ -1,6 +1,7 @@
 #! /usr/bin/env pyton3
 
 import numpy as np
+
 from nltk import FreqDist
 
 
@@ -10,15 +11,20 @@ class Distance:
 
     def __init__(self,d1,d2,normalize=True):
 
-        assert type(d1) == dict and type(d2) == dict
 
-        dist_1 = d1.copy()
-        dist_2 = d2.copy()
+        try:
+            dist_1 = FreqDist(d1)
+            dist_2 = FreqDist(d2)
+
+        except:
+            print(f'Error: Type {type(d1)} or {type(d2)} not compatible with {type(FreqDist)}')
 
         self.labels,dist_1,dist_2 = self._set_missing_labels(list(dist_1.keys()),list(dist_2.keys()),dist_1,dist_2)
 
         self.P = np.array(list(dist_1.values()))
         self.Q = np.array(list(dist_2.values()))
+        self.dist_1 = dist_1
+        self.dist_2= dist_2
 
         if normalize:
             self._normalize()
@@ -132,13 +138,13 @@ class Distance:
             print(f'Metric: {self._distance_functions[dist]} has distance: {dist()}')
 
 
-    def _set_missing_labels(self,l_1,l_2,dist_1,dist_2):
+    def _set_missing_labels(self,l_1,l_2,dist_1,dist_2,type=dict):
         ''' Jan 13th : Started this function which adds missing keys to both dictionaries '''
 
         shared_labels =  list(set(dist_1.keys()) | set(dist_2.keys()))
 
-        new_dist_1 = {}
-        new_dist_2 = {}
+        new_dist_1 = FreqDist()
+        new_dist_2 = FreqDist()
         for key in shared_labels:
             new_dist_1[key] = dist_1[key] if key in dist_1.keys() else 0
             new_dist_2[key] = dist_2[key] if key in dist_2.keys() else 0
