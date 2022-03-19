@@ -198,17 +198,14 @@ class Corpus:
 
         return pairs
 
-    def get_frequencies(self,ngram=1,everygram=False,ipa=True):
+    def get_frequencies(self,ngram=1,ipa=True):
             '''Counts letter frequencies in the derived classes corpus''' 
             fdict = FreqDist() 
-           # Jan 28th - This does not work yet 
             corp = self.words_ipa if ipa == True else self.words
-            for i in range(1,ngram+1):
-                if everygram or i == ngram:
-                    ngram_counts = list(ngrams(pad_both_ends(corp,i),i))
-                    print(ngram_counts)
-                    for gram in ngram_counts:
-                        fdict[gram] += 1
+            for i in range(len(corp)):
+                ngram_counts = list(ngrams(pad_both_ends(corp[i],ngram),ngram))
+                for gram in ngram_counts:
+                    fdict[gram] += 1
 
             return fdict
 
