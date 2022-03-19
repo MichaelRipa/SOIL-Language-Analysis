@@ -23,6 +23,8 @@ class Distance:
 
         self.P = np.array(list(dist_1.values()))
         self.Q = np.array(list(dist_2.values()))
+        self.H1 = np.array(list(dist_1.values()))
+        self.H2 = np.array(list(dist_2.values()))
         self.dist_1 = dist_1
         self.dist_2= dist_2
 
@@ -31,7 +33,7 @@ class Distance:
 
         self._distance_functions = {self.manhatten: 'Manhatten (City block)',self.euclidean_dist: 'Euclidean',self.intersection: 'Intersection',self.kullback_liebler: 'Kullback-Liebler',self.bhattacharyya:'Bhattacharyya',self.matusita: 'Matusita'}
  
-    def manhatten(self):
+    def manhatten_normalized(self):
         ''' For two discrete probability distributions:
 
         P = (p_1,...,p_k) 
@@ -44,6 +46,20 @@ class Distance:
         '''
 
         return np.sum(np.abs(self.P - self.Q))
+
+    def manhatten(self):
+        ''' For two discrete histograms:
+
+        P = (p_1,...,p_k) 
+        Q = (q_1,...,q_k)
+
+        their Manhatten/City block distance (L1 norm) is defined as:
+        
+        D(P,Q) = sum(| p_i - q_i |)
+
+        '''
+
+        return np.sum(np.abs(self.dist_1 - self.dist_2))
 
     def euclidean_dist(self):
         ''' For two discrete probability distributions:

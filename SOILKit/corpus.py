@@ -20,53 +20,6 @@ from abc import ABC, abstractmethod
 csv.field_size_limit(sys.maxsize)
 
 class Corpus_Generator:
-    '''
-        Current issue: No easy way to put this method in without inheritance
-        @staticmethod
-        def sample_from_corpus(corpus,n=1):
-            shuffled_corpus = corpus.copy()
-            np.random.shuffle(shuffled_corpus)
-            return shuffled_corpus[0:n]
-    '''
-    def create_ngrams(self,n=1,corpus=None,for_model=True,vocab=False):
-       
-        if corpus == None:
-            corpus = self.corpus
-
-        train_data, train_vocab = padded_everygram_pipeline(n,corpus)
-
-        if for_model == False:
-            train_data = list(train_data)
-            train_data = [list(trained_word) for trained_word in train_data]
-
-        if vocab:
-            if for_model == False:
-                B
-                train_vocab = list(train_vocab)
-
-            return train_data, train_vocab
-
-        return train_data
-
-        
-
-    def ngram_frequencies(self,n=1,corpus=None,chars_to_ign=[]):
-        '''Jan 21st - This needs to be renamed to make more clear, its functionality seems to just be to list out all characters in a corpus (with duplicates)'''        
-        assert type(chars_to_ign) == list
-
-        if corpus == None:
-            corpus = self.corpus
-
-        e_grams = self.create_ngrams(n,corpus,for_model=False,vocab=False)
-        
-        ngram = []
-        for trained_word in e_grams: #Merge tuples into big list
-            ngram += trained_word
-
-        ngram = [''.join(tup) for tup in ngram if len(tup) == n and '<s>' not in tup and '</s>' not in tup]
-        if chars_to_ign != []:
-            ngram = [tup for tup in ngram for char in chars_to_ign if char not in tup] 
-        return ngram
 
     @staticmethod
     def __load_corpus(language=None):
@@ -75,8 +28,8 @@ class Corpus_Generator:
         assert language in LANGUAGES
 
         #Check if corpus files created locally 
-        #        os.chdir(TOKEN_PATH)
-        os.chdir(TEST_PATH)
+        os.chdir(TOKEN_PATH)
+        #os.chdir(TEST_PATH)
 
         missing_words = not os.path.isfile(f'{language}_words.csv') 
         missing_sents= not os.path.isfile(f'{language}_sents.csv') 
@@ -107,9 +60,9 @@ class Corpus_Generator:
             return
 
         
-        #        DOCUMENT_PATH = os.path.join(CORPUS_PATH, f'{language.capitalize()}')
-        #        os.chdir(DOCUMENT_PATH)
-        os.chdir(TEST_PATH)
+        DOCUMENT_PATH = os.path.join(CORPUS_PATH, f'{language.capitalize()}')
+        os.chdir(DOCUMENT_PATH)
+        #os.chdir(TEST_PATH)
         l_index = LANGUAGES.index(language)
         epi = epitran.Epitran(LANGUAGE_CODES[l_index])
         
@@ -245,19 +198,19 @@ class Corpus:
 
         return pairs
 
-def get_frequencies(self,ngram=1,everygram=False,ipa=True):
-        '''Counts letter frequencies in the derived classes corpus''' 
-        fdict = FreqDist() 
-       # Jan 28th - This does not work yet 
-        corp = self.words_ipa if ipa == True else self.words
-        for i in range(1,ngram+1):
-            if everygram or i == ngram:
-                ngram_counts = list(ngrams(pad_both_ends(corp,i),i))
-                print(ngram_counts)
-                for gram in ngram_counts:
-                    fdict[gram] += 1
+    def get_frequencies(self,ngram=1,everygram=False,ipa=True):
+            '''Counts letter frequencies in the derived classes corpus''' 
+            fdict = FreqDist() 
+           # Jan 28th - This does not work yet 
+            corp = self.words_ipa if ipa == True else self.words
+            for i in range(1,ngram+1):
+                if everygram or i == ngram:
+                    ngram_counts = list(ngrams(pad_both_ends(corp,i),i))
+                    print(ngram_counts)
+                    for gram in ngram_counts:
+                        fdict[gram] += 1
 
-        return fdict
+            return fdict
 
         
         

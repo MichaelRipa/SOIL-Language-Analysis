@@ -11,6 +11,6 @@ LANGUAGE_CODES = ['ita-Latn','deu-Latn','eng-Latn']
 TOKEN_PATH = os.path.join(SCRIPT_PATH, 'data/tokens')
 CORPUS_PATH = os.path.join(SCRIPT_PATH, 'data')
 
-TEST_PATH = os.path.join(SCRIPT_PATH, 'data/testing')
+#TEST_PATH = os.path.join(SCRIPT_PATH, 'data/testing')
 
 
