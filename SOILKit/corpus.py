@@ -227,7 +227,7 @@ class German(Corpus):
 
     def __init__(self):
 
-        words,sents,raw,words_ipa,sents_ipa = Corpus_Generator.__load_corpus(language='german')
+        words,sents,raw,words_ipa,sents_ipa = Corpus_Generator._Corpus_Generator__load_corpus(language='german')
         super().__init__(words,sents,raw,words_ipa,sents_ipa)
 
 
