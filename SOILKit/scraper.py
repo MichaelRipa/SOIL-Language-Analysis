@@ -38,8 +38,9 @@ class Scraper:
             if tag.name == 'h1':
                 header = tag
             elif tag.name == 'p':
-                if tag.get('span') != None: 
-                    return [] # Filters out non-text media articles 
+                for sub_tag in tag.children:
+                    if sub_tag.get('span') != None: 
+                        return [] # Filters out non-text media articles 
 
         if header != '':
             for tag in header.children:
@@ -86,15 +87,12 @@ class Scraper:
         for div in soup.find_all('div'):
 
             if div.get('id') != None:
-                if 'article-body' in div.get('id'):
+                if div.get('id') in ['article-body','article']:
                     article_div = div
                     break
 
             if div.get('class') != None:
-                if 'story__text' in div.get('class'):
-                    article_div = div
-                    break
-                elif 'articolo' in div.get('class'):
+                if div.get('class') in ['story__text','articolo']:
                     article_div = div
                     break
 
