@@ -39,8 +39,13 @@ class Scraper:
                 header = tag
             elif tag.name == 'p':
                 for sub_tag in tag.children:
-                    if sub_tag.get('span') != None: 
-                        return [] # Filters out non-text media articles 
+                    if sub_tag.name == 'span':
+                        try:
+                            if 'typefoto' in sub_tag.get('class'):
+                                return [] # Filters out non-text media articles 
+                        # This may lead to more true negatives
+                        except:
+                            pass
 
         if header != '':
             for tag in header.children:
