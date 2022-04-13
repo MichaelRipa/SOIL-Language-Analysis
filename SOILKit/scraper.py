@@ -11,7 +11,7 @@ URL = 'https://ricerca.repubblica.it/repubblica/archivio/repubblica/'
 
 class Scraper:
 
-    def generate_random_url(n=None,min_year=2000,max_year=2020):
+    def generate_random_url(n=1,min_year=2000,max_year=2020):
         '''Randomly returns n urls with dates that fall between min_year and max_year. By default, the function returns all possible dates'''
 
         new_url = URL
@@ -80,16 +80,30 @@ class Scraper:
         
         soup = bs4.BeautifulSoup(req.text,'html.parser')
 
+        article_div = ''
         article_text = ''
 
         for div in soup.find_all('div'):
 
+            if div.get('id') != None:
+                if 'article-body' in div.get('id'):
+                    article_div = div
+                    break
+
             if div.get('class') != None:
                 if 'story__text' in div.get('class'):
+                    article_div = div
+                    break
+                elif 'articolo' in div.get('class'):
+                    article_div = div
+                    break
 
-                    #Assume empty article if text too short 
-                    if len(div.text) > 50:
-                        article_text += div.text
+
+        if article_div == '':
+            return ''
+        # May be worthwhille doing clean-up here
+        for line in article_div.stripped_strings:
+            article_text += line + ' '
 
         return article_text
 
