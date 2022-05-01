@@ -11,8 +11,8 @@ URL = 'https://ricerca.repubblica.it/repubblica/archivio/repubblica/'
 
 class Scraper:
 
-    def generate_random_url(n=1,min_year=2000,max_year=2020):
-        '''Randomly returns n urls with dates that fall between min_year and max_year. By default, the function returns all possible dates'''
+    def generate_random_url(n=1,min_year=2007,max_year=2017):
+        '''Randomly returns n urls with dates that fall between min_year and max_year. Setting n=None returns all possible urls'''
 
         new_url = URL
         urls = []
@@ -81,6 +81,7 @@ class Scraper:
         assert url != None
 
         req = requests.get(url)
+        req.encoding = 'UTF-8' # Omitting this leads to certain characters not showing up correctly
 
         assert req.status_code == 200
         
@@ -97,10 +98,12 @@ class Scraper:
                     break
 
             if div.get('class') != None:
-                if div.get('class') in ['story__text','articolo']:
+
+                if div.get('class')[0] in ['story__text','articolo']:
                     article_div = div
                     break
 
+                #Note: for some reason get('class') returns a list while get('div') returns a string
 
         if article_div == '':
             return ''
@@ -110,31 +113,33 @@ class Scraper:
 
         return article_text
 
-        
     
-    def scrape_pipeline(n=10):
-        ''' For an inputted input n, returns text scrapped from 10 valid articles'''
-        
+    def scrape_pipeline(n=10,min_year=2007,max_year=2017):
+        ''' For an inputted number n, returns text scrapped from n valid articles published between min_year and max_year'''
         assert type(n) == int
         assert n > 0
-
         remaining_articles = n
         raw_text = ''
-        urls = generate_random_url()
+        urls = Scraper.generate_random_url(n=None) 
         i = 0
+        N = len(urls)
         
-        while remaining_articles > 0:
+        while remaining_articles > 0 and i < N:
             
             # Grab article hyperlinks for arbitrary date
-            new_articles = scrape_articles(urls[i])
+            new_articles = Scraper.scrape_articles(urls[i])
             i += 1
             for article in new_articles:
                 sleep(random()) # Avoid overloading the server
-                article_text = scrape_article(article)
+                article_text = Scraper.scrape_page(article)
                 if article_text != '':
                     raw_text += ' ' + article_text 
                     remaining_articles -= 1
 
+                if remaining_articles == 0:
+                    break
+        if i == N:
+            print("Ran out of url's between years: " + min_year + '-' + max_year)
         
         
         return raw_text
