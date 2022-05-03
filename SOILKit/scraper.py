@@ -5,9 +5,11 @@
 from random import randint,random,shuffle
 import requests
 import bs4
+import re
 from time import sleep
 
 URL = 'https://ricerca.repubblica.it/repubblica/archivio/repubblica/'
+PROXY_URL = 'https://free-proxy-list.net/'
 
 class Scraper:
 
@@ -26,6 +28,15 @@ class Scraper:
             return urls
 
         return urls[0:n]
+
+    def _get_proxies():
+        '''Scrapes a list of proxies to be used with pipeline'''
+        req = requests.get(PROXY_URL)
+        assert req.status_code == 200
+
+        soup = bs4.BeautifulSoup(req.text,'html.parser')
+        proxies = re.findall(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+',str(soup))
+        return proxies
 
 
     def _grab_article_link(article):
@@ -65,8 +76,10 @@ class Scraper:
 
         req = requests.get(url)
 
-        assert req.status_code == 200
-        
+        if req.status_code != 200:
+            print('Following url gave ' + str(req.status_code) + ' status code: ' + str(url))
+            return [] 
+
         soup = bs4.BeautifulSoup(req.text,'html.parser')
         links = []
 
@@ -83,7 +96,10 @@ class Scraper:
         req = requests.get(url)
         req.encoding = 'UTF-8' # Omitting this leads to certain characters not showing up correctly
 
-        assert req.status_code == 200
+        if req.status_code != 200:
+            print('Following url gave ' + str(req.status_code) + ' status code: ' + str(url))
+            return '' 
+
         
         soup = bs4.BeautifulSoup(req.text,'html.parser')
 
@@ -128,6 +144,9 @@ class Scraper:
             
             # Grab article hyperlinks for arbitrary date
             new_articles = Scraper.scrape_articles(urls[i])
+            if new_articles == []:
+                print('Sleeping for ~3 seconds')
+                sleep(random() + 3) # Experiment
             i += 1
             for article in new_articles:
                 sleep(random()) # Avoid overloading the server
