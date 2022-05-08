@@ -67,6 +67,34 @@ class Scraper:
         return [] # Couldn't find the hyperlink
 
 
+    def _get_page_contents(soup):
+
+        article_div = ''
+        article_text = ''
+
+        for div in soup.find_all('div'):
+
+            if div.get('id') != None:
+                if div.get('id') in ['article-body','article']:
+                    article_div = div
+                    break
+
+            if div.get('class') != None:
+
+                if div.get('class')[0] in ['story__text','articolo']:
+                    article_div = div
+                    break
+
+                #Note: for some reason get('class') returns a list while get('div') returns a string
+
+        if article_div == '':
+            return ''
+        # May be worthwhille doing clean-up here
+        for line in article_div.stripped_strings:
+            article_text += line + ' '
+
+        return article_text
+
 
 
     def scrape_articles(url=None):
@@ -102,32 +130,7 @@ class Scraper:
 
         
         soup = bs4.BeautifulSoup(req.text,'html.parser')
-
-        article_div = ''
-        article_text = ''
-
-        for div in soup.find_all('div'):
-
-            if div.get('id') != None:
-                if div.get('id') in ['article-body','article']:
-                    article_div = div
-                    break
-
-            if div.get('class') != None:
-
-                if div.get('class')[0] in ['story__text','articolo']:
-                    article_div = div
-                    break
-
-                #Note: for some reason get('class') returns a list while get('div') returns a string
-
-        if article_div == '':
-            return ''
-        # May be worthwhille doing clean-up here
-        for line in article_div.stripped_strings:
-            article_text += line + ' '
-
-        return article_text
+        return Scraper._get_page_contents(soup)
 
     
     def scrape_pipeline(n=10,min_year=2007,max_year=2017):
