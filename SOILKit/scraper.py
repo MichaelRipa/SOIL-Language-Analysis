@@ -6,6 +6,7 @@ from random import randint,random,shuffle
 import requests
 import bs4
 import re
+import datetime
 from time import sleep
 
 URL = 'https://ricerca.repubblica.it/repubblica/archivio/repubblica/'
@@ -13,21 +14,22 @@ PROXY_URL = 'https://free-proxy-list.net/'
 
 class Scraper:
 
-    def generate_random_url(n=1,min_year=2007,max_year=2017):
-        '''Randomly returns n urls with dates that fall between min_year and max_year. Setting n=None returns all possible urls'''
+    def generate_all_urls(start_year=2010,end_year=2017,start_month=1,end_month=12,start_day=1,end_day=31):
+        '''Generates urls for all valid dates between start_year - start_month - start_day to end_year - end_month - end_day'''
 
         new_url = URL
         urls = []
-        for year in range(min_year,max_year+1):
-            for month in range(1,13):
-                for day in range(1,29):
-                    urls.append(new_url + str(year) + '/' + str(month) + '/' + str(day))
+        for year in range(start_year,end_year+1):
+            for month in range(start_month,end_month+1):
+                for day in range(start_day,end_day+1):
+                    try:
+                        date = datetime.date(year,month,day)
+                        
+                        urls.append(new_url + date.isoformat().replace('-','/'))
+                    except:
+                        pass
+        return urls
 
-        shuffle(urls)
-        if n == None:
-            return urls
-
-        return urls[0:n]
 
     def _get_proxies():
         '''Scrapes a list of proxies to be used with pipeline'''
