@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 _file_dir = Path(os.path.realpath(__file__))
-repo_dir = _file_dir.parent.absolute()
+repo_dir = _file_dir.parent.parent.absolute()
 
 GERMAN_CORPUS_DIRECTORIES = [
     os.path.join(
