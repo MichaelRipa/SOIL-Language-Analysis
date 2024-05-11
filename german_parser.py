@@ -7,7 +7,6 @@ from nltk import sent_tokenize
 
 epi = epitran.Epitran('deu-Latn')
 
-
 def clean_sents_pipeline():
     for filename in os.listdir():
         if 'raw_paz' in filename:
