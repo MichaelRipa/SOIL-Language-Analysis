@@ -8,25 +8,6 @@ from nltk import sent_tokenize
 epi = epitran.Epitran('deu-Latn')
 
 
-def clean_pdf(raw):
-    clean = raw.lower()
-    patterns = ['-?\n','\(cid:[0-9]*\)',' {2,10}']
-    subs = [' ','',' ']
-    for i in range(len(patterns)):
-        clean = re.sub(patterns[i],subs[i],clean)
-    return clean
-
-def filter_sents(sents):
-    clean_sents = []
-    for i in range(len(sents)):
-        if len(re.findall('[0-9]',sents[i]))/len(sents[i]) < 0.09:
-            if len(sents[i].split(' ')) > 4:
-                if re.findall('([a-zA-Z] ){3,}',sents[i]) == []:
-                    if re.findall('([0-9] ){3,}',sents[i]) == []:
-                        clean_sents.append(sents[i])
-
-    return clean_sents
-
 def clean_sents_pipeline():
     for filename in os.listdir():
         if 'raw_paz' in filename:
