@@ -2,10 +2,7 @@
 
 import os
 import re
-import epitran
 from nltk import sent_tokenize
-
-epi = epitran.Epitran('deu-Latn')
 
 def clean_german(raw):
     """Takes raw text scraped from german newspaper pdf's and removes specific metadata"""
@@ -36,7 +33,7 @@ def filter_sentences(sentences):
         condition_2 = len(sents[i].split(' ')) > 4
 
         # Condition 3: Removes space delimited characters
-        re.findall('([a-zA-Z] ){3,}',sents[i]) == []:
+        condition_3 = re.findall('([a-zA-Z] ){3,}',sents[i]) == []
 
         # Condition 4: Removes sudoku puzzle
         condition_4 = re.findall('([0-9] ){3,}',sents[i]) == []
