@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 from enum import Enum
+import operator
 
 from config.config import *
 from utils.clean import clean_german, clean_italian, sentence_tokenize, filter_sentences
@@ -15,15 +16,19 @@ def load_corpus(language : int, as_sentences=False, ipa=False, raw=False):
     data = None
     if language == Language.GERMAN.value:
         data = load_text_files(*GERMAN_CORPUS_DIRECTORIES, remove_newlines=False)
+        if not raw:
+            data = clean_german(data)
     elif language == Language.ITALIAN.value:
         data = load_text_files(*ITALIAN_CORPUS_DIRECTORIES, remove_newlines=False)
+        if not raw:
+            data = clean_italian(data)
     else:
         raise ValueError(f'Error: Wrong language index passed: {language}\nValid options are:\n0 - German\n1 - Italian')
-    if raw:
-        return data
 
     sents = None
-    if as_sentences: 
+    if not as_sentences:
+        return data
+    else: 
         if language == Language.GERMAN.value:
             clean = clean_german(data)
             sents = sentence_tokenize(clean, 'german')
@@ -40,7 +45,35 @@ def load_corpus(language : int, as_sentences=False, ipa=False, raw=False):
                 return transliterate(sents, 'ita-Latn')
     return sents
 
+def get_ngram_freqs(raw,n=1,as_percents=False):
+    """get_ngram_freqs(raw,n=1,as_percents=False)
+    Generates a dictionary of ngram frequencies for a provided string of text
 
+    Args:
+    raw (str): String to count ngram frequencies from
+    n (int): Width of ngram segment
+    as_percents (bool): If True, returns the frequencies as percents (instead of raw counts)
+
+    Returns:
+    sorted_freqs (dict): Sorted dictionary of ngram frequencies
+    """
+    N = len(raw)
+    freqs = {}
+    #Iterate through each ngram
+    for i in range(0,N-n+1):
+        ngram = raw[i:i+n]
+        #Increment ngram tally if and only if it contains valid characters
+        if ngram.isalpha():
+            freqs[ngram] = 1 if ngram not in freqs.keys() else freqs[ngram] + 1
+
+    sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1),reverse=True)
+    #Convert to probability distribution (if specified)
+    if as_percents:
+        for ngram in sorted_freqs.keys():
+            sorted_freqs[ngram] /= N
+
+    return sorted_freqs
 
 if __name__ == '__main__':
     data = load_corpus(1)
+    ngrams = get_ngram_freqs(data,n=1,as_percents=True)
