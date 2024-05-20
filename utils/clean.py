@@ -2,7 +2,6 @@
 
 import os
 import re
-from nltk import sent_tokenize
 
 def clean_german(raw):
     """Takes raw text scraped from german newspaper pdf's and removes specific metadata"""
@@ -19,10 +18,6 @@ def clean_italian(raw):
     # TODO: Determine what to filter
     return clean
 
-def sentence_tokenize(data : str, lang : str):
-    """Simple wrapper function for NLTK `sent_tokenize()` function"""
-    return sent_tokenize(data, lang)
- 
 def filter_sentences(sentences):
     """Filters out sentences from either the german or italian corpus which do not contain a specific amount of content desired for phonetic analysis"""
     clean_sents = []

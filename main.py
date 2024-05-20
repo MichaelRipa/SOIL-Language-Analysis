@@ -4,9 +4,8 @@ from enum import Enum
 import operator
 
 from config.config import *
-from utils.clean import clean_german, clean_italian, sentence_tokenize, filter_sentences
+from utils.clean import clean_german, clean_italian, filter_sentences
 from utils.load import load_text_files
-
 
 class Language(Enum):
     GERMAN = 0
@@ -53,6 +52,7 @@ def load_corpus(language : int, as_sentences=False, ipa=False, raw=False):
     if not as_sentences:
         return data
     else: 
+        from utils.tokenizer import sentence_tokenize # Avoid NLTK dependency
         if language == Language.GERMAN.value:
             clean = clean_german(data)
             sents = sentence_tokenize(clean, 'german')
