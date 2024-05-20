@@ -1,0 +1,2 @@
+epitran
+nltk==3.7
