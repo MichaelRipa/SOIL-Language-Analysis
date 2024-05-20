@@ -16,6 +16,10 @@ def clean_german(raw):
         clean = re.sub(patterns[i],subs[i],clean)
     return clean
 
+def sentence_tokenize(data : str, lang : str):
+    """Simple wrapper function for NLTK `sent_tokenize()` function"""
+    return sent_tokenize(data, lang)
+ 
 def filter_sentences_german(sentences):
     """Filters out sentences from the german corpus which do not contain a specific amount of content desired for phonetic analysis"""
     clean_sents = []
