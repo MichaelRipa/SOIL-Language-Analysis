@@ -90,7 +90,7 @@ def get_ngram_freqs(raw,n=1,as_percents=False):
         if ngram.isalpha():
             freqs[ngram] = 1 if ngram not in freqs.keys() else freqs[ngram] + 1
 
-    sorted_freqs = sorted(freqs.items(), key=operator.itemgetter(1),reverse=True)
+    sorted_freqs = dict(sorted(freqs.items(), key=operator.itemgetter(1),reverse=True))
     #Convert to probability distribution (if specified)
     if as_percents:
         for ngram in sorted_freqs.keys():
