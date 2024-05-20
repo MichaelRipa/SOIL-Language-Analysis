@@ -16,12 +16,18 @@ def clean_german(raw):
         clean = re.sub(patterns[i],subs[i],clean)
     return clean
 
+def clean_italian(raw):
+    """Takes raw text scraped from italian newspaper website and removes specific metadata"""
+    clean = raw.lower()
+    # TODO: Determine what to filter
+    return clean
+
 def sentence_tokenize(data : str, lang : str):
     """Simple wrapper function for NLTK `sent_tokenize()` function"""
     return sent_tokenize(data, lang)
  
-def filter_sentences_german(sentences):
-    """Filters out sentences from the german corpus which do not contain a specific amount of content desired for phonetic analysis"""
+def filter_sentences(sentences):
+    """Filters out sentences from either the german or italian corpus which do not contain a specific amount of content desired for phonetic analysis"""
     clean_sents = []
     for sent in sentences:
         # Condition 1: The proportion of numeric characters must be lower than a pre-defined threshold
@@ -35,7 +41,7 @@ def filter_sentences_german(sentences):
         # Condition 4: Removes sudoku puzzle
         condition_4 = re.findall('([0-9] ){3,}',sents[i]) == []
 
-        # Add sentence if it passes the previous 4 conditionsf
+        # Add sentence if it passes the previous 4 conditions
         if condition_1 and condition_2 and condition_3 and condition_4:
             clean_sents.append(sent)
 
