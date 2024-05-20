@@ -13,6 +13,30 @@ class Language(Enum):
     ITALIAN = 1
 
 def load_corpus(language : int, as_sentences=False, ipa=False, raw=False):
+    """
+    Load and optionally process a language corpus.
+
+    Parameters:
+    ----------
+    language : int
+        The language to load. Use `Language.GERMAN.value` (0) for German and `Language.ITALIAN.value` (1) for Italian.
+    as_sentences : bool, optional
+        If True, return the corpus as a list of sentences (default is False).
+    ipa : bool, optional
+        If True, transliterate the sentences to IPA (International Phonetic Alphabet). Only effective if `as_sentences` is True (default is False).
+    raw : bool, optional
+        If True, return the raw corpus data without cleaning (default is False).
+
+    Returns:
+    -------
+    list of str
+        The loaded corpus data, either as raw text, a list of cleaned sentences, or a list of IPA-transliterated sentences, depending on the parameters.
+
+    Notes:
+    -----
+    - Ensure that `GERMAN_CORPUS_DIRECTORIES` and `ITALIAN_CORPUS_DIRECTORIES` are defined globally and point to the correct corpus directories.
+    """
+
     data = None
     if language == Language.GERMAN.value:
         data = load_text_files(*GERMAN_CORPUS_DIRECTORIES, remove_newlines=False)
